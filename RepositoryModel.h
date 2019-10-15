@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 /*
         Description: interface to git programs
@@ -26,10 +26,7 @@ public:
                             QObject *parent = nullptr);
    ~RepositoryModel();
    void clear(bool complete = true);
-   QString sha(int row) const;
-   const QStringList fileNames() const { return fNames; }
-   void resetFileNames(const QString &fn);
-   void setEarlyOutputState(bool b = true) { earlyOutputCnt = (b ? earlyOutputCntBase : -1); }
+   void setEarlyOutputState(bool b = true) { earlyOutputCnt = b ? earlyOutputCntBase : -1; }
 
    virtual QVariant data(const QModelIndex &index, int role) const;
    virtual QVariant headerData(int s, Qt::Orientation o, int role = Qt::DisplayRole) const;
@@ -55,7 +52,4 @@ private:
    QMap<RepositoryModelColumns, QString> mColumns;
    int earlyOutputCnt;
    int earlyOutputCntBase;
-   QStringList fNames;
-   QStringList curFNames;
-   QStringList renamedRevs;
 };

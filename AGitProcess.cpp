@@ -154,7 +154,8 @@ void AGitProcess::onFinished(int, QProcess::ExitStatus exitStatus)
 
    mErrorOutput += QString::fromUtf8(errorOutput);
 
-   mErrorExit = exitStatus != QProcess::NormalExit || mCanceling || errorOutput.contains("error");
+   mErrorExit = exitStatus != QProcess::NormalExit || mCanceling || errorOutput.contains("error")
+       || errorOutput.contains("fatal");
 
    if (!mErrorExit && mRunOutput)
       mRunOutput->append(readAllStandardOutput() + mErrorOutput);

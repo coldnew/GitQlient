@@ -51,12 +51,6 @@ RepositoryModel::~RepositoryModel()
    delete lns;
 }
 
-void RepositoryModel::resetFileNames(const QString &fn)
-{
-   fNames.clear();
-   fNames.append(fn);
-}
-
 int RepositoryModel::rowCount(const QModelIndex &parent) const
 {
 
@@ -67,11 +61,6 @@ bool RepositoryModel::hasChildren(const QModelIndex &parent) const
 {
 
    return !parent.isValid();
-}
-
-QString RepositoryModel::sha(int row) const
-{
-   return index(row, static_cast<int>(RepositoryModelColumns::SHA)).data().toString();
 }
 
 void RepositoryModel::flushTail()
@@ -103,8 +92,6 @@ void RepositoryModel::clear(bool complete)
    firstFreeLane = earlyOutputCntBase = 0;
    setEarlyOutputState(false);
    lns->clear();
-   fNames.clear();
-   curFNames.clear();
 
    endResetModel();
    emit headerDataChanged(Qt::Horizontal, 0, 5);

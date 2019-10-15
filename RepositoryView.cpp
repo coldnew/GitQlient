@@ -293,7 +293,8 @@ void RepositoryView::showContextMenu(const QPoint &pos)
       return;
    }
 
-   const auto sha = mRepositoryModel->sha(index.row());
+   const auto sha
+       = mRepositoryModel->index(index.row(), static_cast<int>(RepositoryModelColumns::SHA)).data().toString();
    const auto menu = new RepositoryContextMenu(mGit, sha, this);
    connect(menu, &RepositoryContextMenu::signalRepositoryUpdated, this, &RepositoryView::signalViewUpdated);
    connect(menu, &RepositoryContextMenu::signalOpenDiff, this, &RepositoryView::signalOpenDiff);

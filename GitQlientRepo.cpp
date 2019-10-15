@@ -95,8 +95,10 @@ GitQlientRepo::GitQlientRepo(const QString &repo, QWidget *parent)
 
 void GitQlientRepo::updateUi()
 {
-   if (!mCurrentDir.isEmpty())
+   if (!mRepositoryBusy && !mCurrentDir.isEmpty())
    {
+      mRepositoryBusy = true;
+
       mGit->init(mCurrentDir, mRevisionsCache);
 
       mBranchesWidget->showBranches();
@@ -112,6 +114,8 @@ void GitQlientRepo::updateUi()
 
       if (commitStackedIndex == 1)
          mCommitWidget->init(currentSha);
+
+      mRepositoryBusy = false;
    }
 }
 
