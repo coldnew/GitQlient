@@ -4,13 +4,18 @@
 
 Revision::Revision(const QByteArray &b, uint s, int idx, int *next)
    : orderIdx(idx)
-   , ba(const_cast<QByteArray &>(b))
+   , ba(b)
    , start(s)
 {
 
    indexed = isDiffCache = isApplied = isUnApplied = false;
    descRefsMaster = ancRefsMaster = descBrnMaster = -1;
    *next = indexData(true, false);
+}
+
+bool Revision::isValid() const
+{
+   return sha() != QString();
 }
 
 bool Revision::isBoundary() const

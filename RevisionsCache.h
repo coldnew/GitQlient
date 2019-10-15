@@ -23,12 +23,13 @@
  ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  ***************************************************************************************/
 
+#include <Revision.h>
+
 #include <QObject>
 #include <QHash>
 #include <QSharedPointer>
 
 class Git;
-class Revision;
 
 class RevisionsCache : public QObject
 {
@@ -40,23 +41,28 @@ signals:
 public:
    explicit RevisionsCache(QSharedPointer<Git> git, QObject *parent = nullptr);
 
+   void clear();
+
+   /* Revs*/
+   Revision getRevision(const QString &sha);
+   Revision revLookup(int row) const;
+   Revision revLookup(const QString &sha) const;
+   bool contains(const QString &sha) { return revs.contains(sha); }
+   void insertRevision(const QString &sha, const Revision &rev);
    QString sha(int row) const;
-   const Revision *revLookup(int row) const;
-   const Revision *revLookup(const QString &sha) const;
-   void insertRevision(const QString sha, const Revision &rev);
    QString getShortLog(const QString &sha) const;
    int row(const QString &sha) const;
+
+   /* RevsOrder */
    int count() const { return revOrder.count(); }
    bool isEmpty() const { return revOrder.isEmpty(); }
    void flushTail(int earlyOutputCnt, int earlyOutputCntBase);
-   void clear();
    QString &createRevisionSha(int index) { return revOrder[index]; }
    QString getRevisionSha(int index) const { return revOrder.at(index); }
    int revOrderCount() const { return revOrder.count(); }
-   bool contains(const QString &sha) { return revs.contains(sha); }
 
 private:
    QSharedPointer<Git> mGit;
-   QHash<QString, const Revision *> revs;
+   QHash<QString, Revision> revs;
    QVector<QString> revOrder;
 };

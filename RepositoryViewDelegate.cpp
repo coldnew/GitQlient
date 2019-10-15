@@ -352,10 +352,10 @@ void RepositoryViewDelegate::paintGraph(QPainter *p, const QStyleOptionViewItem 
                                               QColor("#CD9077") /* pastel */ };
    const auto r = mRevCache->revLookup(i.row());
 
-   if (!r)
+   if (!r.isValid())
       return;
 
-   if (r->isDiffCache && !mGit->isNothingToCommit())
+   if (r.isDiffCache && !mGit->isNothingToCommit())
    {
       paintWip(p, opt);
       return;
@@ -366,11 +366,11 @@ void RepositoryViewDelegate::paintGraph(QPainter *p, const QStyleOptionViewItem 
    p->translate(opt.rect.topLeft());
 
    // calculate lanes
-   if (r->lanes.count() == 0)
-      mGit->setLane(r->sha());
+   if (r.lanes.count() == 0)
+      mGit->setLane(r.sha());
 
    QBrush back = opt.palette.base();
-   const QVector<int> &lanes(r->lanes);
+   const QVector<int> &lanes(r.lanes);
    auto laneNum = lanes.count();
    auto activeLane = 0;
    for (int i = 0; i < laneNum; i++)
@@ -427,13 +427,13 @@ void RepositoryViewDelegate::paintLog(QPainter *p, const QStyleOptionViewItem &o
    int row = index.row();
    const auto r = mRevCache->revLookup(row);
 
-   if (!r)
+   if (!r.isValid())
       return;
 
    auto offset = 0;
 
-   if (mGit->checkRef(r->sha()) > 0)
-      paintTagBranch(p, opt, offset, r->sha());
+   if (mGit->checkRef(r.sha()) > 0)
+      paintTagBranch(p, opt, offset, r.sha());
 
    auto newOpt = opt;
    newOpt.rect.setX(opt.rect.x() + offset + 5);

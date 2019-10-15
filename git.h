@@ -159,7 +159,7 @@ public:
 
    const QString getLaneParent(const QString &fromSHA, int laneNum);
    const QStringList getChildren(const QString &parent);
-   const Revision *revLookup(const QString &sha) const;
+   const Revision revLookup(const QString &sha) const;
    uint checkRef(const QString &sha, uint mask = ANY_REF) const;
    const QString getRefSha(const QString &refName, RefType type = ANY_REF, bool askGit = true);
    const QStringList getRefNames(const QString &sha, uint mask = ANY_REF) const;
@@ -235,18 +235,18 @@ private:
    bool startRevList(QStringList &args);
    bool startParseProc(const QStringList &initCmd);
    bool populateRenamedPatches(const QString &sha, const QStringList &nn, QStringList *on, bool bt);
-   bool filterEarlyOutputRev(Revision *revision);
+   bool filterEarlyOutputRev(Revision &revision);
    int addChunk(const QByteArray &ba, int ofs);
    void parseDiffFormat(RevFile &rf, const QString &buf, FileNamesLoader &fl);
    void parseDiffFormatLine(RevFile &rf, const QString &line, int parNum, FileNamesLoader &fl);
    void getDiffIndex();
-   Revision *fakeRevData(const QString &sha, const QStringList &parents, const QString &author, const QString &date,
-                         const QString &log, const QString &longLog, const QString &patch, int idx);
-   const Revision *fakeWorkDirRev(const QString &parent, const QString &log, const QString &longLog, int idx);
+   Revision fakeRevData(const QString &sha, const QStringList &parents, const QString &author, const QString &date,
+                        const QString &log, const QString &longLog, const QString &patch, int idx);
+   const Revision fakeWorkDirRev(const QString &parent, const QString &log, const QString &longLog, int idx);
    const RevFile *fakeWorkDirRevFile(const WorkingDirInfo &wd);
    bool copyDiffIndex(const QString &parent);
    const RevFile *insertNewFiles(const QString &sha, const QString &data);
-   const RevFile *getAllMergeFiles(const Revision *r);
+   const RevFile *getAllMergeFiles(const QString &r);
    bool runDiffTreeWithRenameDetection(const QString &runCmd, QString *runOutput);
    void indexTree();
    void updateDescMap(const Revision *r, uint i, QHash<QPair<uint, uint>, bool> &dm, QHash<uint, QVector<int>> &dv);

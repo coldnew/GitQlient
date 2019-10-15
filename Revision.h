@@ -4,13 +4,10 @@
 
 class Revision
 {
-   // prevent implicit C++ compiler defaults
-   Revision();
-   // Revision(const Revision &);
-   Revision &operator=(const Revision &);
-
 public:
+   Revision() {}
    Revision(const QByteArray &b, uint s, int idx, int *next);
+   bool isValid() const;
    bool isBoundary() const;
    uint parentsCount() const;
    QString parent(int idx) const;
@@ -38,7 +35,7 @@ private:
    QString mid(int start, int len) const;
    QString midSha(int start, int len) const;
 
-   QByteArray &ba; // reference here!
+   QByteArray ba; // reference here!
    int start;
    mutable int parentsCnt, shaStart, comStart, autStart, autDateStart;
    mutable int sLogStart, sLogLen, lLogStart, lLogLen, diffStart, diffLen;

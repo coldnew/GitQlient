@@ -69,7 +69,7 @@ void CommitWidget::init(const QString &shaToAmmend)
    if (mIsAmmend)
    {
       const auto revInfo = mGit->revLookup(shaToAmmend);
-      const auto author = revInfo->author().split("<");
+      const auto author = revInfo.author().split("<");
       ui->leAuthorName->setText(author.first());
       ui->leAuthorEmail->setText(author.last().mid(0, author.last().count() - 1));
    }

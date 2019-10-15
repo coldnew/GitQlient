@@ -340,8 +340,7 @@ void FullDiffWidget::update(const StateInfo &st)
    if (combined)
    {
       const auto r = mRevCache->revLookup(st.sha());
-      if (r)
-         diffHighlighter->setCombinedLength(r->parentsCount());
+      diffHighlighter->setCombinedLength(r.parentsCount());
    }
    else
       diffHighlighter->setCombinedLength(0);

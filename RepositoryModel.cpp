@@ -195,38 +195,38 @@ QVariant RepositoryModel::data(const QModelIndex &index, int role) const
 
    const auto r = mRevCache->revLookup(index.row());
 
-   if (!r)
+   if (!r.isValid())
       return no_value;
 
    if (role == Qt::ToolTipRole)
    {
       QDateTime d;
-      d.setSecsSinceEpoch(r->authorDate().toUInt());
+      d.setSecsSinceEpoch(r.authorDate().toUInt());
 
       return QString("<p><b>Author:</b> %1</p><p><b>Date:</b> %2</p>")
-          .arg(r->author().split("<").first(), d.toString(Qt::SystemLocaleShortDate));
+          .arg(r.author().split("<").first(), d.toString(Qt::SystemLocaleShortDate));
    }
 
    int col = index.column();
 
    // calculate lanes
-   if (r->lanes.count() == 0)
-      mGit->setLane(r->sha());
+   if (r.lanes.count() == 0)
+      mGit->setLane(r.sha());
 
    switch (static_cast<RepositoryModelColumns>(col))
    {
       case RepositoryModelColumns::ID:
          return (annIdValid ? rowCnt - index.row() : QVariant());
       case RepositoryModelColumns::SHA:
-         return r->sha();
+         return r.sha();
       case RepositoryModelColumns::LOG:
-         return r->shortLog();
+         return r.shortLog();
       case RepositoryModelColumns::AUTHOR:
-         return r->author().split("<").first();
+         return r.author().split("<").first();
       case RepositoryModelColumns::DATE:
       {
          QDateTime dt;
-         dt.setSecsSinceEpoch(r->authorDate().toUInt());
+         dt.setSecsSinceEpoch(r.authorDate().toUInt());
          return dt.toString("dd/MM/yyyy hh:mm");
       }
       default:

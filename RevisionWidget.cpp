@@ -95,26 +95,26 @@ void RevisionWidget::setCurrentCommitSha(const QString &sha)
 
    if (sha != QGit::ZERO_SHA and !sha.isEmpty())
    {
-      const auto currentRev = const_cast<Revision *>(mGit->revLookup(sha));
+      const auto currentRev = mGit->revLookup(sha);
 
-      if (currentRev)
+      if (currentRev.isValid())
       {
-         mCurrentSha = currentRev->sha();
-         mParentSha = currentRev->parent(0);
+         mCurrentSha = currentRev.sha();
+         mParentSha = currentRev.parent(0);
 
-         QDateTime commitDate = QDateTime::fromSecsSinceEpoch(currentRev->authorDate().toInt());
+         QDateTime commitDate = QDateTime::fromSecsSinceEpoch(currentRev.authorDate().toInt());
          labelSha->setText(sha);
 
-         const auto author = currentRev->committer();
+         const auto author = currentRev.committer();
          const auto authorName = author.split("<").first();
          const auto email = author.split("<").last().split(">").first();
 
          labelEmail->setText(email);
-         labelTitle->setText(currentRev->shortLog());
+         labelTitle->setText(currentRev.shortLog());
          labelAuthor->setText(authorName);
          labelDateTime->setText(commitDate.toString("dd/MM/yyyy hh:mm"));
 
-         const auto description = currentRev->longLog().trimmed();
+         const auto description = currentRev.longLog().trimmed();
          labelDescription->setText(description.isEmpty() ? "No description provided." : description);
 
          auto f = labelDescription->font();
