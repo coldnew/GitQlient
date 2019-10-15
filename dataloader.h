@@ -31,7 +31,7 @@ public:
 
 signals:
    void newDataReady();
-   void loaded(ulong, int, bool, const QString &, const QString &);
+   void loaded(ulong, bool, const QString &, const QString &);
 
 private slots:
    void on_finished(int, QProcess::ExitStatus);
@@ -48,7 +48,6 @@ private:
 
    QByteArray *halfChunk;
    UnbufferedTemporaryFile *dataFile;
-   QTime loadTime;
    QTimer guiUpdateTimer;
    ulong loadedBytes;
    bool isProcExited;

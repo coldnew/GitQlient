@@ -39,12 +39,9 @@ public:
    virtual bool hasChildren(const QModelIndex &par = QModelIndex()) const;
    virtual int columnCount(const QModelIndex &) const { return mColumns.count(); }
 
-public slots:
-   void on_changeFont(const QFont &);
-
 private slots:
    void on_newRevsAdded();
-   void on_loadCompleted(const QString &);
+   void on_loadCompleted();
 
 private:
    QSharedPointer<RevisionsCache> mRevCache;
@@ -56,13 +53,9 @@ private:
    Lanes *lns = nullptr;
    uint firstFreeLane;
    QMap<RepositoryModelColumns, QString> mColumns;
-   int rowCnt;
-   bool annIdValid;
-   int loadTime;
    int earlyOutputCnt;
    int earlyOutputCntBase;
    QStringList fNames;
    QStringList curFNames;
    QStringList renamedRevs;
-   QHash<QString, QString> renamedPatches;
 };

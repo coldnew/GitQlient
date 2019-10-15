@@ -1394,7 +1394,7 @@ bool Git::startParseProc(const QStringList &initCmd)
    DataLoader *dl = new DataLoader(this); // auto-deleted when done
    connect(this, &Git::cancelLoading, dl, &DataLoader::on_cancel);
    connect(dl, &DataLoader::newDataReady, this, &Git::newRevsAdded);
-   connect(dl, &DataLoader::loaded, this, &Git::on_loaded);
+   connect(dl, &DataLoader::loaded, this, &Git::loadCompleted);
 
    QString buf;
    return dl->start(initCmd, mWorkingDir, buf);
@@ -1497,26 +1497,6 @@ void Git::init2()
    // build up command line arguments
    QStringList args;
    startRevList(args);
-}
-
-void Git::on_loaded(ulong byteSize, int loadTime, bool normalExit)
-{
-   if (normalExit)
-   { // do not send anything if killed
-
-      emit newRevsAdded();
-
-      mRevData->loadTime += loadTime;
-
-      ulong kb = byteSize / 1024;
-      double mbs = static_cast<double>(byteSize) / mRevData->loadTime / 1000;
-      QString tmp;
-      tmp.sprintf("Loaded %i revisions  (%li KB),   "
-                  "time elapsed: %i ms  (%.2f MB/s)",
-                  mRevCache->count(), kb, mRevData->loadTime, mbs);
-
-      emit loadCompleted(tmp);
-   }
 }
 
 bool Git::saveOnCache(const QString &gitDir, const QHash<QString, const RevFile *> &rf, const QVector<QString> &dirs,
@@ -1664,72 +1644,6 @@ bool Git::loadFromCache(const QString &gitDir, QHash<QString, const RevFile *> &
       data++;
    }
    f.close();
-   return true;
-}
-
-bool Git::populateRenamedPatches(const QString &renamedSha, const QStringList &newNames, QStringList *oldNames,
-                                 bool backTrack)
-{
-
-   const auto ret = run("git diff-tree -r -M " + renamedSha);
-   if (!ret.first)
-      return false;
-
-   QString runOutput = ret.second;
-
-   // find the first renamed file with the new file name in renamedFiles list
-   QString line;
-   for (auto it : newNames)
-   {
-      if (backTrack)
-      {
-         line = runOutput.section('\t' + it + '\t', 0, 0, QString::SectionIncludeTrailingSep);
-         line.chop(1);
-      }
-      else
-         line = runOutput.section('\t' + it + '\n', 0, 0);
-
-      if (!line.isEmpty())
-         break;
-   }
-   if (line.contains('\n'))
-      line = line.section('\n', -1, -1);
-
-   const QString &status = line.section('\t', -2, -2).section(' ', -1, -1);
-   if (!status.startsWith('R'))
-      return false;
-
-   if (backTrack)
-   {
-      const QString &nextFile = runOutput.section(line, 1, 1).section('\t', 1, 1);
-      oldNames->append(nextFile.section('\n', 0, 0));
-      return true;
-   }
-   // get the diff betwen two files
-   const QString &prevFileSha = line.section(' ', 2, 2);
-   const QString &lastFileSha = line.section(' ', 3, 3);
-   if (prevFileSha == lastFileSha) // just renamed
-      runOutput.clear();
-   else
-   {
-      const auto ret2 = run("git diff --no-ext-diff -r --full-index " + prevFileSha + " " + lastFileSha);
-      if (!ret2.first)
-         return false;
-
-      runOutput = ret2.second;
-   }
-
-   const QString &prevFile = line.section('\t', -1, -1);
-   if (!oldNames->contains(prevFile))
-      oldNames->append(prevFile);
-
-   // save the patch, will be used later to create a
-   // proper graft sha with correct parent info
-   if (mRevData)
-   {
-      QString tmp(!runOutput.isEmpty() ? runOutput : "diff --no-ext-diff --\nsimilarity index 100%\n");
-      mRevData->renamedPatches.insert(renamedSha, tmp);
-   }
    return true;
 }
 
@@ -1982,15 +1896,15 @@ void Git::updateDescMap(const Revision &r, uint idx, QHash<QPair<uint, uint>, bo
    {
 
       const auto tmp = mRevCache->getRevisionBySha(mRevCache->createRevisionSha(r.descRefsMaster));
-      const QVector<int> &nr = tmp.descRefs;
 
-      for (int i = 0; i < nr.count(); i++)
+      for (int i = 0; i < tmp.descRefs.count(); i++)
       {
 
-         if (!dv.contains(nr[i]))
+         const auto descendentRefIndex = static_cast<uint>(tmp.descRefs.at(i));
+         if (!dv.contains(descendentRefIndex))
             return;
 
-         const QVector<int> &dvv = dv[nr[i]];
+         const QVector<int> &dvv = dv.value(descendentRefIndex);
 
          // copy the whole vector instead of each element
          // in the first iteration of the loop below
@@ -1999,7 +1913,7 @@ void Git::updateDescMap(const Revision &r, uint idx, QHash<QPair<uint, uint>, bo
          for (int y = 0; y < dvv.count(); y++)
          {
 
-            uint v = (uint)dvv[y];
+            uint v = static_cast<uint>(dvv[y]);
             QPair<uint, uint> key = qMakePair(idx, v);
             QPair<uint, uint> keyN = qMakePair(v, idx);
             dm.insert(key, true);
@@ -2016,44 +1930,44 @@ void Git::updateDescMap(const Revision &r, uint idx, QHash<QPair<uint, uint>, bo
    dv.insert(idx, descVec);
 }
 
-void Git::mergeBranches(Revision *p, const Revision *r)
+void Git::mergeBranches(Revision &p, const Revision &r)
 {
 
-   int r_descBrnMaster = (checkRef(r->sha(), BRANCH | RMT_BRANCH) ? r->orderIdx : r->descBrnMaster);
+   int r_descBrnMaster = (checkRef(r.sha(), BRANCH | RMT_BRANCH) ? r.orderIdx : r.descBrnMaster);
 
-   if (p->descBrnMaster == r_descBrnMaster || r_descBrnMaster == -1)
+   if (p.descBrnMaster == r_descBrnMaster || r_descBrnMaster == -1)
       return;
 
    // we want all the descendant branches, so just avoid duplicates
-   const QVector<int> &src1 = mRevCache->getRevisionBySha(mRevCache->createRevisionSha(p->descBrnMaster)).descBranches;
+   const QVector<int> &src1 = mRevCache->getRevisionBySha(mRevCache->createRevisionSha(p.descBrnMaster)).descBranches;
    const QVector<int> &src2 = mRevCache->getRevisionBySha(mRevCache->createRevisionSha(r_descBrnMaster)).descBranches;
    QVector<int> dst(src1);
    for (int i = 0; i < src2.count(); i++)
       if (std::find(src1.constBegin(), src1.constEnd(), src2[i]) == src1.constEnd())
          dst.append(src2[i]);
 
-   p->descBranches = dst;
-   p->descBrnMaster = p->orderIdx;
+   p.descBranches = dst;
+   p.descBrnMaster = p.orderIdx;
 
-   mRevCache->insertRevision(p->sha(), *p);
+   mRevCache->insertRevision(p.sha(), p);
 }
 
-void Git::mergeNearTags(bool down, Revision *p, const Revision *r, const QHash<QPair<uint, uint>, bool> &dm)
+void Git::mergeNearTags(bool down, Revision &p, const Revision &r, const QHash<QPair<uint, uint>, bool> &dm)
 {
 
-   bool isTag = checkRef(r->sha(), TAG);
-   int r_descRefsMaster = isTag ? r->orderIdx : r->descRefsMaster;
-   int r_ancRefsMaster = isTag ? r->orderIdx : r->ancRefsMaster;
+   bool isTag = checkRef(r.sha(), TAG);
+   int r_descRefsMaster = isTag ? r.orderIdx : r.descRefsMaster;
+   int r_ancRefsMaster = isTag ? r.orderIdx : r.ancRefsMaster;
 
-   if (down && (p->descRefsMaster == r_descRefsMaster || r_descRefsMaster == -1))
+   if (down && (p.descRefsMaster == r_descRefsMaster || r_descRefsMaster == -1))
       return;
 
-   if (!down && (p->ancRefsMaster == r_ancRefsMaster || r_ancRefsMaster == -1))
+   if (!down && (p.ancRefsMaster == r_ancRefsMaster || r_ancRefsMaster == -1))
       return;
 
    // we want the nearest tag only, so remove any tag
    // that is ancestor of any other tag in p U r
-   const QString &sha1 = mRevCache->getRevisionSha(down ? p->descRefsMaster : p->ancRefsMaster);
+   const QString &sha1 = mRevCache->getRevisionSha(down ? p.descRefsMaster : p.ancRefsMaster);
    const QString &sha2 = mRevCache->getRevisionSha(down ? r_descRefsMaster : r_ancRefsMaster);
    const QVector<int> &src1
        = down ? mRevCache->getRevisionBySha(sha1).descRefs : mRevCache->getRevisionBySha(sha1).ancRefs;
@@ -2073,7 +1987,8 @@ void Git::mergeNearTags(bool down, Revision *p, const Revision *r, const QHash<Q
             add = false;
             break;
          }
-         QPair<uint, uint> key = qMakePair((uint)src2[s2], (uint)src1[s1]);
+
+         const auto key = qMakePair(static_cast<uint>(src2[s2]), static_cast<uint>(src1[s1]));
 
          if (!dm.contains(key))
          { // could be empty if all tags are independent
@@ -2089,17 +2004,17 @@ void Git::mergeNearTags(bool down, Revision *p, const Revision *r, const QHash<Q
       if (add)
          dst.append(src2[s2]);
    }
-   QVector<int> &nearRefs = (down ? p->descRefs : p->ancRefs);
-   int &nearRefsMaster = (down ? p->descRefsMaster : p->ancRefsMaster);
+   QVector<int> &nearRefs = (down ? p.descRefs : p.ancRefs);
+   int &nearRefsMaster = (down ? p.descRefsMaster : p.ancRefsMaster);
 
    nearRefs.clear();
    for (int s2 = 0; s2 < dst.count(); s2++)
       if (dst[s2] != -1)
          nearRefs.append(dst[s2]);
 
-   mRevCache->insertRevision(p->sha(), *p);
+   mRevCache->insertRevision(p.sha(), p);
 
-   nearRefsMaster = p->orderIdx;
+   nearRefsMaster = p.orderIdx;
 }
 
 // TODO: Insert the new modified revision
@@ -2137,14 +2052,14 @@ void Git::indexTree()
       }
       if (isT)
       {
-         updateDescMap(r, i, descMap, descVect);
+         updateDescMap(r, static_cast<uint>(i), descMap, descVect);
          r.descRefs.clear();
          r.descRefs.append(i);
       }
 
       mRevCache->insertRevision(r.sha(), r);
 
-      for (uint y = 0; y < r.parentsCount(); y++)
+      for (int y = 0; y < static_cast<int>(r.parentsCount()); ++y)
       {
          auto p = mRevCache->getRevisionBySha(r.parent(y));
 
@@ -2155,12 +2070,12 @@ void Git::indexTree()
             if (p.descBrnMaster == -1)
                p.descBrnMaster = isB ? r.orderIdx : r.descBrnMaster;
             else
-               mergeBranches(&p, &r);
+               mergeBranches(p, r);
 
             if (p.descRefsMaster == -1)
                p.descRefsMaster = isT ? r.orderIdx : r.descRefsMaster;
             else
-               mergeNearTags(true, &p, &r, descMap);
+               mergeNearTags(true, p, r, descMap);
 
             mRevCache->insertRevision(p.sha(), p);
          }
@@ -2187,7 +2102,7 @@ void Git::indexTree()
             if (c.ancRefsMaster == -1)
                c.ancRefsMaster = isTag ? r.orderIdx : r.ancRefsMaster;
             else
-               mergeNearTags(false, &c, &r, descMap);
+               mergeNearTags(false, c, r, descMap);
          }
       }
 

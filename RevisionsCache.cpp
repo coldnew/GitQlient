@@ -14,15 +14,10 @@ Revision RevisionsCache::getRevision(const QString &sha)
    return revs.value(sha);
 }
 
-QString RevisionsCache::sha(int row) const
-{
-   return row >= 0 && row < revOrder.count() ? QString(revOrder.at(row)) : QString();
-}
-
 Revision RevisionsCache::getRevisionByRow(int row) const
 {
-   const auto shaStr = sha(row);
-   return !shaStr.isEmpty() ? revs.value(shaStr) : Revision();
+   const auto validRow = row >= 0 && row < revOrder.count();
+   return validRow ? getRevisionBySha(revOrder.at(row)) : Revision();
 }
 
 Revision RevisionsCache::getRevisionBySha(const QString &sha) const
@@ -36,12 +31,6 @@ void RevisionsCache::insertRevision(const QString &sha, const Revision &rev)
    revOrder.append(sha);
 }
 
-QString RevisionsCache::getShortLog(const QString &sha) const
-{
-   const auto r = getRevisionBySha(sha);
-   return r.shortLog();
-}
-
 int RevisionsCache::row(const QString &sha) const
 {
    return !sha.isEmpty() ? revs.value(sha).orderIdx : -1;
@@ -49,22 +38,20 @@ int RevisionsCache::row(const QString &sha) const
 
 void RevisionsCache::flushTail(int earlyOutputCnt, int earlyOutputCntBase)
 {
-   if (earlyOutputCnt < 0 || earlyOutputCnt >= count())
-      return;
-
-   auto cnt = count() - earlyOutputCnt + 1;
-
-   while (cnt > 0)
+   if (earlyOutputCnt >= 0 && earlyOutputCnt < count())
    {
-      const auto sha = revOrder.last();
-      revs.remove(sha);
-      revOrder.pop_back();
-      --cnt;
-   }
+      for (int i = earlyOutputCntBase; i < revOrder.count(); ++i)
+         revs[revOrder[i]].lanes.clear();
 
-   // reset all lanes, will be redrawn
-   for (int i = earlyOutputCntBase; i < revOrder.count(); i++)
-      revs[revOrder[i]].lanes.clear();
+      auto cnt = count() - earlyOutputCnt + 1;
+      while (cnt > 0)
+      {
+         const auto sha = revOrder.last();
+         revs.remove(sha);
+         revOrder.pop_back();
+         --cnt;
+      }
+   }
 }
 
 void RevisionsCache::clear()

@@ -53,16 +53,14 @@ RepositoryModel::~RepositoryModel()
 
 void RepositoryModel::resetFileNames(const QString &fn)
 {
-
    fNames.clear();
    fNames.append(fn);
-   curFNames = fNames;
 }
 
 int RepositoryModel::rowCount(const QModelIndex &parent) const
 {
 
-   return !parent.isValid() ? rowCnt : 0;
+   return !parent.isValid() ? mRevCache->count() : 0;
 }
 
 bool RepositoryModel::hasChildren(const QModelIndex &parent) const
@@ -73,7 +71,7 @@ bool RepositoryModel::hasChildren(const QModelIndex &parent) const
 
 QString RepositoryModel::sha(int row) const
 {
-   return mRevCache->sha(row);
+   return index(row, static_cast<int>(RepositoryModelColumns::SHA)).data().toString();
 }
 
 void RepositoryModel::flushTail()
@@ -82,7 +80,6 @@ void RepositoryModel::flushTail()
    mRevCache->flushTail(earlyOutputCnt, earlyOutputCntBase);
    firstFreeLane = static_cast<unsigned int>(earlyOutputCntBase);
    lns->clear();
-   rowCnt = mRevCache->count();
    endResetModel();
 }
 
@@ -103,62 +100,32 @@ void RepositoryModel::clear(bool complete)
 
    mRevCache->clear();
 
-   firstFreeLane = loadTime = earlyOutputCntBase = 0;
+   firstFreeLane = earlyOutputCntBase = 0;
    setEarlyOutputState(false);
    lns->clear();
    fNames.clear();
    curFNames.clear();
 
-   rowCnt = mRevCache->count();
-   annIdValid = false;
    endResetModel();
    emit headerDataChanged(Qt::Horizontal, 0, 5);
 }
 
 void RepositoryModel::on_newRevsAdded()
 {
-   // do not process revisions if there are possible renamed points
-   // or pending renamed patch to apply
-   if (!renamedRevs.isEmpty() || !renamedPatches.isEmpty())
-      return;
-
    // do not attempt to insert 0 rows since the inclusive range would be invalid
    const auto revisionsCount = mRevCache->count();
-   if (rowCnt == revisionsCount)
-      return;
 
-   beginInsertRows(QModelIndex(), rowCnt, revisionsCount - 1);
-   rowCnt = revisionsCount;
-   endInsertRows();
+   if (revisionsCount > 0)
+   {
+      beginResetModel();
+      endResetModel();
+   }
 }
 
-void RepositoryModel::on_loadCompleted(const QString &)
+void RepositoryModel::on_loadCompleted()
 {
-   const auto revisionsCount = mRevCache->count();
-   if (rowCnt >= revisionsCount)
-      return;
-
-   // now we can process last revision
-   rowCnt = revisionsCount;
    beginResetModel(); // force a reset to avoid artifacts in file history graph under Windows
    endResetModel();
-}
-
-void RepositoryModel::on_changeFont(const QFont &f)
-{
-
-   QString maxStr(QString::number(rowCnt).length() + 1, '8');
-   QFontMetrics fmRows(f);
-   int neededWidth = fmRows.boundingRect(maxStr).width();
-
-   QString id("Id");
-   QFontMetrics fmId(qApp->font());
-
-   while (fmId.boundingRect(id).width() < neededWidth)
-      id += ' ';
-
-   mColumns[RepositoryModelColumns::ID] = id;
-   emit headerDataChanged(Qt::Horizontal, 1, 1);
 }
 
 QVariant RepositoryModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -172,7 +139,7 @@ QVariant RepositoryModel::headerData(int section, Qt::Orientation orientation, i
 
 QModelIndex RepositoryModel::index(int row, int column, const QModelIndex &) const
 {
-   if (row < 0 || row >= rowCnt)
+   if (row < 0 || row >= mRevCache->count())
       return QModelIndex();
 
    return createIndex(row, column, nullptr);
@@ -216,7 +183,7 @@ QVariant RepositoryModel::data(const QModelIndex &index, int role) const
    switch (static_cast<RepositoryModelColumns>(col))
    {
       case RepositoryModelColumns::ID:
-         return (annIdValid ? rowCnt - index.row() : QVariant());
+         return no_value;
       case RepositoryModelColumns::SHA:
          return r.sha();
       case RepositoryModelColumns::LOG:

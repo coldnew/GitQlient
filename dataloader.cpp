@@ -51,11 +51,10 @@ DataLoader::~DataLoader()
 
 void DataLoader::on_cancel()
 {
-
    if (!canceling)
-   { // just once
+   {
       canceling = true;
-      kill(); // SIGKILL (Unix and Mac), TerminateProcess (Windows)
+      kill();
    }
 }
 
@@ -76,7 +75,6 @@ bool DataLoader::start(const QStringList &args, const QString &wd, const QString
       deleteLater();
       return false;
    }
-   loadTime.start();
    guiUpdateTimer.start(GUI_UPDATE_INTERVAL);
    return true;
 }
@@ -106,7 +104,7 @@ void DataLoader::on_timeout()
 
    if (lastBuffer)
    {
-      emit loaded(loadedBytes, loadTime.elapsed(), true, "", "");
+      emit loaded(loadedBytes, true, "", "");
       deleteLater();
    }
    else if (isProcExited)

@@ -45,7 +45,7 @@ signals:
    // TODO: To review
 signals:
    void newRevsAdded();
-   void loadCompleted(const QString &);
+   void loadCompleted();
    void cancelLoading();
    void cancelAllProcesses();
 
@@ -174,7 +174,6 @@ public:
 
 private:
    void loadFileCache();
-   void on_loaded(ulong, int, bool);
    bool saveOnCache(const QString &gitDir, const QHash<QString, const RevFile *> &rf, const QVector<QString> &dirs,
                     const QVector<QString> &files);
    bool loadFromCache(const QString &gitDir, QHash<QString, const RevFile *> &rfm, QVector<QString> &dirs,
@@ -234,7 +233,6 @@ private:
    void clearFileNames();
    bool startRevList(QStringList &args);
    bool startParseProc(const QStringList &initCmd);
-   bool populateRenamedPatches(const QString &sha, const QStringList &nn, QStringList *on, bool bt);
    bool filterEarlyOutputRev(Revision &revision);
    int addChunk(const QByteArray &ba, int ofs);
    void parseDiffFormat(RevFile &rf, const QString &buf, FileNamesLoader &fl);
@@ -250,8 +248,8 @@ private:
    bool runDiffTreeWithRenameDetection(const QString &runCmd, QString *runOutput);
    void indexTree();
    void updateDescMap(const Revision &r, uint i, QHash<QPair<uint, uint>, bool> &dm, QHash<uint, QVector<int>> &dv);
-   void mergeNearTags(bool down, Revision *p, const Revision *r, const QHash<QPair<uint, uint>, bool> &dm);
-   void mergeBranches(Revision *p, const Revision *r);
+   void mergeNearTags(bool down, Revision &p, const Revision &r, const QHash<QPair<uint, uint>, bool> &dm);
+   void mergeBranches(Revision &p, const Revision &r);
    void updateLanes(Revision &c, Lanes &lns, const QString &sha);
    const QStringList getOthersFiles();
    const QStringList getOtherFiles(const QStringList &selFiles);

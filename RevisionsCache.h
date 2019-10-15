@@ -49,8 +49,6 @@ public:
    Revision getRevisionBySha(const QString &sha) const;
    bool contains(const QString &sha) { return revs.contains(sha); }
    void insertRevision(const QString &sha, const Revision &rev);
-   QString sha(int row) const;
-   QString getShortLog(const QString &sha) const;
    int row(const QString &sha) const;
 
    /* RevsOrder */
