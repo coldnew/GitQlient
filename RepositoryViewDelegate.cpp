@@ -350,7 +350,7 @@ void RepositoryViewDelegate::paintGraph(QPainter *p, const QStyleOptionViewItem 
                                               QColor("#848484") /* grey */,
                                               QColor("#FF79C6") /* pink */,
                                               QColor("#CD9077") /* pastel */ };
-   const auto r = mRevCache->revLookup(i.row());
+   const auto r = mRevCache->getRevisionByRow(i.row());
 
    if (!r.isValid())
       return;
@@ -425,7 +425,7 @@ void RepositoryViewDelegate::paintWip(QPainter *painter, QStyleOptionViewItem op
 void RepositoryViewDelegate::paintLog(QPainter *p, const QStyleOptionViewItem &opt, const QModelIndex &index) const
 {
    int row = index.row();
-   const auto r = mRevCache->revLookup(row);
+   const auto r = mRevCache->getRevisionByRow(row);
 
    if (!r.isValid())
       return;

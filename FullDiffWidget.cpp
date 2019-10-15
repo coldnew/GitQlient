@@ -339,7 +339,7 @@ void FullDiffWidget::update(const StateInfo &st)
    bool combined = (st.isMerge() && !st.allMergeFiles());
    if (combined)
    {
-      const auto r = mRevCache->revLookup(st.sha());
+      const auto r = mRevCache->getRevisionBySha(st.sha());
       diffHighlighter->setCombinedLength(r.parentsCount());
    }
    else

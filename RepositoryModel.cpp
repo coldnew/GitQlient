@@ -193,7 +193,7 @@ QVariant RepositoryModel::data(const QModelIndex &index, int role) const
    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::ToolTipRole))
       return no_value; // fast path, 90% of calls ends here!
 
-   const auto r = mRevCache->revLookup(index.row());
+   const auto r = mRevCache->getRevisionByRow(index.row());
 
    if (!r.isValid())
       return no_value;

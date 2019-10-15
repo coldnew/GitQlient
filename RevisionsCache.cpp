@@ -19,13 +19,13 @@ QString RevisionsCache::sha(int row) const
    return row >= 0 && row < revOrder.count() ? QString(revOrder.at(row)) : QString();
 }
 
-Revision RevisionsCache::revLookup(int row) const
+Revision RevisionsCache::getRevisionByRow(int row) const
 {
    const auto shaStr = sha(row);
    return !shaStr.isEmpty() ? revs.value(shaStr) : Revision();
 }
 
-Revision RevisionsCache::revLookup(const QString &sha) const
+Revision RevisionsCache::getRevisionBySha(const QString &sha) const
 {
    return !sha.isEmpty() ? revs.value(sha) : Revision();
 }
@@ -38,7 +38,7 @@ void RevisionsCache::insertRevision(const QString &sha, const Revision &rev)
 
 QString RevisionsCache::getShortLog(const QString &sha) const
 {
-   const auto r = revLookup(sha);
+   const auto r = getRevisionBySha(sha);
    return r.shortLog();
 }
 

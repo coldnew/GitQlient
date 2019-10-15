@@ -249,7 +249,7 @@ private:
    const RevFile *getAllMergeFiles(const QString &r);
    bool runDiffTreeWithRenameDetection(const QString &runCmd, QString *runOutput);
    void indexTree();
-   void updateDescMap(const Revision *r, uint i, QHash<QPair<uint, uint>, bool> &dm, QHash<uint, QVector<int>> &dv);
+   void updateDescMap(const Revision &r, uint i, QHash<QPair<uint, uint>, bool> &dm, QHash<uint, QVector<int>> &dv);
    void mergeNearTags(bool down, Revision *p, const Revision *r, const QHash<QPair<uint, uint>, bool> &dm);
    void mergeBranches(Revision *p, const Revision *r);
    void updateLanes(Revision &c, Lanes &lns, const QString &sha);

@@ -91,7 +91,7 @@ void Domain::update(bool fromMaster)
 
    busy = true;
 
-   const auto r = mRevCache->revLookup(st.sha());
+   const auto r = mRevCache->getRevisionBySha(st.sha());
    st.setIsMerge(r.parentsCount() > 1);
 
    st.setLock(true); // any state change will be queued now

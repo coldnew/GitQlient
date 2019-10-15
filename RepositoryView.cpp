@@ -113,7 +113,7 @@ void RepositoryView::scrollToNext(int direction)
    // -1 = the next child in history
    //  1 = the previous parent in history
    const QString &s = sha(currentIndex().row());
-   const auto r = mRevCache->revLookup(s);
+   const auto r = mRevCache->getRevisionBySha(s);
 
    if (r.isValid())
    {
@@ -132,9 +132,8 @@ void RepositoryView::scrollToCurrent(ScrollHint hint)
 
 int RepositoryView::getLaneType(const QString &sha, int pos) const
 {
-
-   const auto r = mRevCache->revLookup(sha);
-   return (r.isValid() && pos < r.lanes.count() && pos >= 0 ? r.lanes.at(pos) : -1);
+   const auto r = mRevCache->getRevisionBySha(sha);
+   return r.isValid() && pos < r.lanes.count() && pos >= 0 ? r.lanes.at(pos) : -1;
 }
 
 void RepositoryView::getSelectedItems(QStringList &selectedItems)
@@ -314,7 +313,7 @@ bool RepositoryView::getLaneParentsChildren(const QString &sha, int x, QStringLi
    QString root;
    if (!isFreeLane(t))
    {
-      p = mRevCache->revLookup(sha).parents(); // pointer cannot be nullptr
+      p = mRevCache->getRevisionBySha(sha).parents();
       root = sha;
    }
    else

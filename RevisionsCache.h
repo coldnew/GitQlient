@@ -45,8 +45,8 @@ public:
 
    /* Revs*/
    Revision getRevision(const QString &sha);
-   Revision revLookup(int row) const;
-   Revision revLookup(const QString &sha) const;
+   Revision getRevisionByRow(int row) const;
+   Revision getRevisionBySha(const QString &sha) const;
    bool contains(const QString &sha) { return revs.contains(sha); }
    void insertRevision(const QString &sha, const Revision &rev);
    QString sha(int row) const;
